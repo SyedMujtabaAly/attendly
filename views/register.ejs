@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+<section class="container auth-wrap"><div class="card auth-card wide">
+  <span class="eyebrow">Join your workspace</span><h1>Create employee account</h1>
+  <form action="/register" method="post">
+    <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+    <div class="form-grid">
+      <label>Employee ID<input name="employeeId" autocomplete="username" required autofocus></label>
+      <label>Email<input type="email" name="email" autocomplete="email" required></label>
+      <label>First name<input name="firstName" autocomplete="given-name" required></label>
+      <label>Last name<input name="lastName" autocomplete="family-name" required></label>
+      <label>Department<select name="departmentId" required><option value="">Select department</option><% departments.forEach(d => { %><option value="<%= d.id %>"><%= d.name %></option><% }) %></select></label>
+      <label>Shift<select name="shiftId" required><option value="">Select shift</option><% shifts.forEach(s => { %><option value="<%= s.id %>"><%= s.name %> (<%= s.start_time.slice(0,5) %>–<%= s.end_time.slice(0,5) %>)</option><% }) %></select></label>
+    </div>
+    <label>Password<input type="password" name="password" minlength="8" autocomplete="new-password" required><small>At least 8 characters</small></label>
+    <button class="btn btn-primary full" type="submit">Create account</button>
+  </form>
+  <p class="form-note">Already registered? <a href="/login">Sign in</a></p>
+</div></section>
+<%- include('partials/footer') %>

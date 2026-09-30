@@ -1,0 +1,26 @@
+<%- include('partials/header') %>
+<section class="container hero">
+  <div class="hero-copy">
+    <span class="eyebrow">Workforce attendance platform</span>
+    <h1>Attendance that keeps every workday on track.</h1>
+    <p>A focused workspace for clock-ins, shift punctuality, monthly insights, and reliable employee records.</p>
+    <div class="actions"><a class="btn btn-primary" href="/login">Open employee portal</a><a class="btn btn-secondary" href="/register">Create an account</a></div>
+    <div class="proof"><span>Real-time tracking</span><span>Role-based reports</span><span>CSV import</span></div>
+  </div>
+  <div class="preview">
+    <div class="preview-head"><strong>Today’s attendance</strong><span class="live">Live</span></div>
+    <div class="checkin"><span class="check">✓</span><div><small>Current status</small><strong>Checked in</strong></div><time>08:54</time></div>
+    <div class="stats"><div><strong>21</strong><span>Present</span></div><div><strong>02</strong><span>Late</span></div><div><strong>01</strong><span>Absent</span></div></div>
+    <div class="preview-row"><span>Monday, Sep 28</span><span class="badge success">On time</span></div>
+    <div class="preview-row"><span>Friday, Sep 25</span><span class="badge warning">Late</span></div>
+  </div>
+</section>
+<section class="container features">
+  <span class="eyebrow">Built for employees and HR</span><h2>One system, two clear experiences.</h2>
+  <div class="feature-grid">
+    <article><b>01</b><h3>Employee self-service</h3><p>Clock in and out, review monthly records, and understand punctuality without chasing spreadsheets.</p></article>
+    <article><b>02</b><h3>Actionable HR reports</h3><p>Filter team attendance by month and department, and spot trends in seconds.</p></article>
+    <article><b>03</b><h3>Practical data tools</h3><p>Import CSV attendance exports with validation and safe database updates.</p></article>
+  </div>
+</section>
+<%- include('partials/footer') %>

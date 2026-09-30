@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+<section class="container page">
+  <div class="page-head"><div><span class="eyebrow">Employee workspace</span><h1>Good day, <%= user.first_name %>.</h1><p><%= user.employee_id %> · <%= user.department_name || 'No department' %> · <%= user.shift_name || 'No shift' %></p></div></div>
+  <div class="card today-card">
+    <div><span class="muted">Today · <%= today %></span><h2><%= todayRecord?.punch_out_time ? 'Shift completed' : todayRecord?.punch_in_time ? 'You’re checked in' : 'Ready to start?' %></h2>
+      <% if (todayRecord?.punch_in_time) { %><p>Started at <strong><%= todayRecord.punch_in_time.slice(0,5) %></strong><% if (todayRecord.punch_out_time) { %> · Finished at <strong><%= todayRecord.punch_out_time.slice(0,5) %></strong><% } %></p><% } %>
+    </div>
+    <% if (!todayRecord?.punch_in_time) { %><form action="/attendance/punch-in" method="post"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><button class="btn btn-success">Punch in</button></form>
+    <% } else if (!todayRecord.punch_out_time) { %><form action="/attendance/punch-out" method="post"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><button class="btn btn-warning">Punch out</button></form><% } %>
+  </div>
+  <div class="metric-grid"><div class="metric"><span>Present</span><strong><%= present %></strong></div><div class="metric"><span>Late</span><strong><%= late %></strong></div><div class="metric"><span>Absent weekdays</span><strong><%= absent %></strong></div></div>
+  <div class="card"><div class="card-head"><div><h2>This month</h2><p class="muted">Your latest attendance records</p></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Punch in</th><th>Punch out</th><th>Status</th></tr></thead><tbody>
+      <% if (!attendance.length) { %><tr><td colspan="4" class="empty">No attendance records yet.</td></tr><% } %>
+      <% attendance.forEach(row => { %><tr><td><%= row.date %></td><td><%= row.punch_in_time?.slice(0,5) || '—' %></td><td><%= row.punch_out_time?.slice(0,5) || '—' %></td><td><span class="badge <%= row.is_late ? 'warning' : 'success' %>"><%= row.is_late ? 'Late' : 'On time' %></span></td></tr><% }) %>
+    </tbody></table></div>
+  </div>
+</section>
+<%- include('partials/footer') %>

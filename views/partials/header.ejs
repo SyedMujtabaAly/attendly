@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Attendly is a modern employee attendance management system.">
+  <meta name="theme-color" content="#111827">
+  <title><%= title %> | Attendly</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo" href="/"><span class="logo-mark">A</span>Attendly</a>
+      <nav aria-label="Primary navigation">
+        <% if (user) { %>
+          <a href="/dashboard">Dashboard</a>
+          <% if (user.is_admin) { %><a href="/admin/report">Reports</a><% } %>
+          <form action="/logout" method="post" class="inline-form">
+            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+            <button class="nav-button" type="submit">Sign out</button>
+          </form>
+        <% } else { %>
+          <a href="/login">Sign in</a>
+          <a class="nav-cta" href="/register">Get started</a>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <% if (flash) { %><div class="container"><div class="alert alert-<%= flash.type %>"><%= flash.message %></div></div><% } %>
