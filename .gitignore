@@ -4,5 +4,3 @@ data/*.sqlite-*
 .env
 *.log
 uploads/
-.DS_Store
-Thumbs.db

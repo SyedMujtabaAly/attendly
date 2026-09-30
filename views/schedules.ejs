@@ -1,0 +1,107 @@
+<%- include('partials/header') %>
+<section class="container page">
+  <div class="page-heading">
+    <div><span class="eyebrow">Administrator workspace</span><h1>Shift schedules</h1><p class="muted">Plan workdays, set time expectations, and give employees a clear roster.</p></div>
+    <a class="btn secondary" href="/admin/report">Attendance report</a>
+  </div>
+  <div class="notice">
+    <strong>How schedules work</strong>
+    <p>Assignments take priority over an employee’s default Monday–Friday shift. Weekends are days off unless assigned.
+    Arriving before shift start is early. Arriving after start plus the grace period is late.
+    Overnight shifts finish the following day. All times use <strong><%= timezone %></strong>.</p>
+  </div>
+
+  <div class="schedule-forms">
+    <div class="card">
+      <h2>Assign a schedule</h2>
+      <p class="muted">Assign one day or repeat a shift across selected weekdays.</p>
+      <form method="post" action="/admin/schedules">
+        <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+        <div class="form-grid">
+          <label for="assign-employee">Employee
+            <select id="assign-employee" name="employee" required>
+              <option value="">Select an employee</option>
+              <option value="all">All active employees</option>
+              <% employees.forEach(e => { %><option value="<%= e.id %>"><%= e.first_name %> <%= e.last_name %> · <%= e.employee_id %></option><% }) %>
+            </select>
+          </label>
+          <label for="assign-shift">Shift
+            <select id="assign-shift" name="shiftId" required>
+              <option value="">Select a shift or day off</option>
+              <option value="off">Day off</option>
+              <% shifts.forEach(s => { %><option value="<%= s.id %>"><%= s.name %> · <%= s.start_time.slice(0,5) %>–<%= s.end_time.slice(0,5) %> · <%= s.grace_minutes %> min grace</option><% }) %>
+            </select>
+          </label>
+          <label for="start-date">Start date<input id="start-date" type="date" name="startDate" value="<%= today %>" min="<%= today %>" required></label>
+          <label for="end-date">End date<input id="end-date" type="date" name="endDate" value="<%= today %>" min="<%= today %>" required></label>
+        </div>
+        <fieldset class="weekday-picker">
+          <legend>Apply on these weekdays</legend>
+          <% dayNames.forEach((day, index) => { %>
+            <label class="check-label"><input type="checkbox" name="weekdays" value="<%= index %>" <%= index > 0 && index < 6 ? 'checked' : '' %>><%= day.slice(0,3) %></label>
+          <% }) %>
+        </fieldset>
+        <label for="schedule-notes">Notes <span class="muted">(optional)</span>
+          <input id="schedule-notes" name="notes" maxlength="200" placeholder="e.g. Front desk coverage">
+        </label>
+        <label class="check-label"><input type="checkbox" name="replace" value="yes">Replace existing assignments in this range</label>
+        <p class="help">Maximum 93 days per assignment. Shifts with a recorded punch-in are locked. Overlapping shifts are rejected.</p>
+        <button class="btn primary" type="submit">Save schedule</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Create a shift</h2>
+      <p class="muted">Reusable shift times for your team.</p>
+      <form method="post" action="/admin/shifts">
+        <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+        <label for="shift-name">Shift name<input id="shift-name" name="name" maxlength="60" placeholder="e.g. Customer support" required></label>
+        <div class="form-grid">
+          <label for="shift-start">Starts at<input id="shift-start" type="time" name="startTime" required></label>
+          <label for="shift-end">Ends at<input id="shift-end" type="time" name="endTime" required></label>
+        </div>
+        <label for="shift-grace">Late grace period (minutes)<input id="shift-grace" type="number" name="graceMinutes" value="5" min="0" max="120" required></label>
+        <p class="help">For a 09:00 start with 5 minutes of grace, arrival through 09:05 is on time. 09:06 is 6 minutes late. End times earlier than start times mean an overnight shift.</p>
+        <button class="btn secondary" type="submit">Create shift</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Shift library</h2>
+    <div class="shift-library">
+      <% shifts.forEach(s => { %><div class="shift-tile"><strong><%= s.name %></strong><span><%= s.start_time.slice(0,5) %>–<%= s.end_time.slice(0,5) %><%= s.end_time <= s.start_time ? ' (+1 day)' : '' %></span><small><%= s.grace_minutes %> min late grace</small></div><% }) %>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Team assignments</h2>
+    <form class="filters" method="get" action="/admin/schedules">
+      <label for="roster-month">Month<input id="roster-month" type="month" name="month" value="<%= month.value %>"></label>
+      <label for="roster-employee">Employee<select id="roster-employee" name="employee"><option value="0">All employees</option>
+        <% employees.forEach(e => { %><option value="<%= e.id %>" <%= employeeId === e.id ? 'selected' : '' %>><%= e.first_name %> <%= e.last_name %> · <%= e.employee_id %></option><% }) %>
+      </select></label>
+      <button class="btn primary" type="submit">View roster</button>
+    </form>
+    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Employee</th><th>Shift</th><th>Times</th><th>Grace</th><th>Notes</th><th>Action</th></tr></thead><tbody>
+      <% if (!assignments.length) { %><tr><td colspan="7" class="empty">No custom assignments this month. Default weekday shifts still apply.</td></tr><% } %>
+      <% assignments.forEach(a => { %>
+        <tr><td><%= a.date %></td><td><strong><%= a.first_name %> <%= a.last_name %></strong><small><%= a.employee_id %></small></td>
+        <td><%= a.shift_name || 'Day off' %></td><td><%= a.start_time ? a.start_time.slice(0,5) + '–' + a.end_time.slice(0,5) + (a.end_time <= a.start_time ? ' (+1 day)' : '') : '—' %></td>
+        <td><%= a.shift_id ? a.grace_minutes + ' min' : '—' %></td><td class="notes-cell"><%= a.notes || '—' %></td>
+        <td><% if (a.locked || a.date < today) { %><span class="muted"><%= a.locked ? 'Attendance locked' : 'Past date' %></span><% } else { %>
+          <form action="/admin/schedules/<%= a.id %>/remove" method="post"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><button class="text-button" type="submit">Reset to default</button></form>
+        <% } %></td></tr>
+      <% }) %>
+    </tbody></table></div>
+    <p class="help">Resetting removes a custom assignment and restores the default weekday shift or weekend day off.</p>
+  </div>
+  <% if (roster.length) { %>
+    <div class="card">
+      <h2>Employee’s full month</h2><p class="muted">Assigned shifts, defaults, and days off together.</p>
+      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Shift</th><th>Start</th><th>End</th><th>Grace</th><th>Source</th></tr></thead><tbody>
+        <% roster.forEach(s => { %><tr><td><%= s.date %></td><td><%= s.off ? 'Day off' : s.name %></td><td><%= s.off ? '—' : s.start.slice(11,16) %></td><td><%= s.off ? '—' : s.end.slice(11,16) + (s.overnight ? ' (+1 day)' : '') %></td><td><%= s.off ? '—' : s.graceMinutes + ' min' %></td><td><%= s.source %></td></tr><% }) %>
+      </tbody></table></div>
+    </div>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

@@ -1,18 +1,25 @@
 <%- include('partials/header') %>
 <section class="container page">
-  <div class="page-head"><div><span class="eyebrow">Administrator workspace</span><h1>Attendance report</h1><p>Review workforce attendance and import machine exports.</p></div></div>
+  <div class="page-heading"><div><span class="eyebrow">Administrator workspace</span><h1>Attendance report</h1><p class="muted">Attendance measured against each employee’s scheduled workdays.</p></div><a class="btn secondary" href="/admin/schedules">Manage schedules</a></div>
   <div class="card">
     <form class="filters" method="get" action="/admin/report">
-      <label>Month<input type="month" name="month" value="<%= month.value %>"></label>
-      <label>Department<select name="department"><option value="0">All departments</option><% departments.forEach(d => { %><option value="<%= d.id %>" <%= departmentId === d.id ? 'selected' : '' %>><%= d.name %></option><% }) %></select></label>
-      <button class="btn btn-primary">Apply filters</button>
+      <label for="report-month">Month<input id="report-month" type="month" name="month" value="<%= month.value %>"></label>
+      <label for="report-department">Department<select id="report-department" name="department"><option value="0">All</option><% departments.forEach(d => { %><option value="<%= d.id %>" <%= departmentId === d.id ? 'selected' : '' %>><%= d.name %></option><% }) %></select></label>
+      <button class="btn primary">Apply</button>
     </form>
-    <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Present</th><th>Late</th><th>Absent</th><th>Late rate</th></tr></thead><tbody>
-      <% employees.forEach(e => { const lateRate = e.present ? Math.round(e.late * 100 / e.present) : 0; %><tr><td><strong><%= e.first_name %> <%= e.last_name %></strong><small><%= e.employee_id %></small></td><td><%= e.department_name || '—' %></td><td><%= e.present %></td><td><%= e.late %></td><td><%= Math.max(0, workingDays - e.present) %></td><td><%= lateRate %>%</td></tr><% }) %>
+    <p class="help">Scheduled includes upcoming shifts. Absent counts only completed shifts without a punch-in. Early and late counts use the shift saved when attendance was recorded.</p>
+    <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Scheduled</th><th>Present</th><th>Early</th><th>Late</th><th>Absent</th><th>Late rate</th><th>Roster</th></tr></thead><tbody>
+      <% if (!employees.length) { %><tr><td colspan="9" class="empty">No employees match this filter.</td></tr><% } %>
+      <% employees.forEach(e => { %>
+        <tr><td><strong><%= e.first_name %> <%= e.last_name %></strong><small><%= e.employee_id %></small></td><td><%= e.department_name %></td>
+        <td><%= e.scheduled %></td><td><%= e.present %></td><td><%= e.early %></td><td><%= e.late %></td><td><%= e.absent %></td>
+        <td><%= e.present ? Math.round(e.late * 100 / e.present) : 0 %>%</td><td><a href="/admin/schedules?employee=<%= e.id %>&month=<%= month.value %>">View schedule</a></td></tr>
+      <% }) %>
     </tbody></table></div>
   </div>
-  <div class="card import-card"><div><h2>Import attendance</h2><p class="muted">Upload a CSV with Employee ID, Date, Punch In Time, and optional Punch Out Time columns.</p></div>
-    <form action="/admin/import" method="post" enctype="multipart/form-data"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><input type="file" name="attendanceFile" accept=".csv,text/csv" required><button class="btn btn-secondary">Import CSV</button></form>
+  <div class="card today">
+    <div><h2>Import attendance</h2><p class="muted">CSV columns: Employee ID, Date, Punch In Time, Punch Out Time.</p><p class="help">Date is the shift’s start date, including overnight shifts. New records use that date’s schedule and grace period. Days off and invalid rows are skipped.</p></div>
+    <form action="/admin/import" method="post" enctype="multipart/form-data"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><label for="attendance-file">Attendance CSV<input id="attendance-file" type="file" name="attendanceFile" accept=".csv" required></label><button class="btn secondary">Import CSV</button></form>
   </div>
 </section>
 <%- include('partials/footer') %>

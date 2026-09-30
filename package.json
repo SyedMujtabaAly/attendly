@@ -2,13 +2,14 @@
   "name": "attendly-nodejs",
   "version": "1.0.0",
   "private": true,
-  "description": "Portfolio-ready employee attendance management system built with Node.js, Express, EJS, and SQLite.",
+  "description": "Portfolio-ready attendance system built with Node.js, Express, EJS, and SQLite.",
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
     "setup": "node src/setup.js",
-    "check": "node --check src/app.js && node --check src/db.js && node --check src/setup.js"
+    "check": "node --check src/app.js && node --check src/db.js && node --check src/setup.js && node --check src/scheduling.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20"
@@ -16,7 +17,7 @@
   "dependencies": {
     "better-sqlite3": "^12.4.1",
     "bcryptjs": "^3.0.2",
-    "csv-parse": "^6.1.0",
+    "csv-parse": "^7.0.3",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-session": "^1.18.2",

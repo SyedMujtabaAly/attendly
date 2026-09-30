@@ -1,18 +1,67 @@
 <%- include('partials/header') %>
 <section class="container page">
-  <div class="page-head"><div><span class="eyebrow">Employee workspace</span><h1>Good day, <%= user.first_name %>.</h1><p><%= user.employee_id %> · <%= user.department_name || 'No department' %> · <%= user.shift_name || 'No shift' %></p></div></div>
-  <div class="card today-card">
-    <div><span class="muted">Today · <%= today %></span><h2><%= todayRecord?.punch_out_time ? 'Shift completed' : todayRecord?.punch_in_time ? 'You’re checked in' : 'Ready to start?' %></h2>
-      <% if (todayRecord?.punch_in_time) { %><p>Started at <strong><%= todayRecord.punch_in_time.slice(0,5) %></strong><% if (todayRecord.punch_out_time) { %> · Finished at <strong><%= todayRecord.punch_out_time.slice(0,5) %></strong><% } %></p><% } %>
+  <span class="eyebrow">Employee workspace</span>
+  <h1>Good day, <%= user.first_name %>.</h1>
+  <p class="muted"><%= user.employee_id %> · <%= user.department_name %> · Default shift: <%= user.shift_name %></p>
+  <div class="card today">
+    <div>
+      <small>Today · <%= today %> · <%= timezone %></small>
+      <h2><%= todayRecord?.punch_in_time ? (todayRecord.punch_out_time ? 'Shift completed' : 'You’re checked in') : todaySchedule.off ? 'Enjoy your day off' : 'Ready for your shift?' %></h2>
+      <% const expectedStart = todayRecord?.scheduled_start || (!todaySchedule.off ? todaySchedule.start : null);
+         const expectedEnd = todayRecord?.scheduled_end || (!todaySchedule.off ? todaySchedule.end : null); %>
+      <% if (expectedStart) { %>
+        <p><strong><%= todayRecord?.shift_name || todaySchedule.name %></strong> · <%= expectedStart.slice(11,16) %>–<%= expectedEnd.slice(11,16) %><%= expectedEnd.slice(0,10) !== expectedStart.slice(0,10) ? ' (+1 day)' : '' %>
+        · <%= todayRecord?.grace_minutes ?? todaySchedule.graceMinutes %> min late grace</p>
+        <small>Shift date: <%= todayRecord?.date || todaySchedule.date %></small>
+      <% } %>
+      <% if (todayRecord?.punch_in_time) { %>
+        <p>Started <strong><%= todayRecord.punch_in_time.slice(0,5) %></strong>
+        <% if (todayRecord.punch_out_time) { %> · Finished <strong><%= todayRecord.punch_out_time.slice(0,5) %></strong><% } %>
+        <span class="badge <%= todayRecord.arrival_status === 'Early' ? 'early' : todayRecord.is_late ? 'warning' : 'success' %>"><%= todayRecord.arrival_status || (todayRecord.is_late ? 'Late' : 'On time') %></span></p>
+      <% } else if (!todaySchedule.off) { %><p class="muted"><%= todaySchedule.source %>. Early arrivals are recorded against this shift’s start.</p><% } %>
+      <% if (todaySchedule.notes) { %><p class="muted"><%= todaySchedule.notes %></p><% } %>
     </div>
-    <% if (!todayRecord?.punch_in_time) { %><form action="/attendance/punch-in" method="post"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><button class="btn btn-success">Punch in</button></form>
-    <% } else if (!todayRecord.punch_out_time) { %><form action="/attendance/punch-out" method="post"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><button class="btn btn-warning">Punch out</button></form><% } %>
+    <% if (todayRecord?.punch_in_time && !todayRecord.punch_out_time) { %>
+      <form action="/attendance/punch-out" method="post"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><button class="btn orange">Punch out</button></form>
+    <% } else if (!todayRecord?.punch_in_time && !todaySchedule.off) { %>
+      <form action="/attendance/punch-in" method="post"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><button class="btn green">Punch in</button></form>
+    <% } %>
   </div>
-  <div class="metric-grid"><div class="metric"><span>Present</span><strong><%= present %></strong></div><div class="metric"><span>Late</span><strong><%= late %></strong></div><div class="metric"><span>Absent weekdays</span><strong><%= absent %></strong></div></div>
-  <div class="card"><div class="card-head"><div><h2>This month</h2><p class="muted">Your latest attendance records</p></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Punch in</th><th>Punch out</th><th>Status</th></tr></thead><tbody>
-      <% if (!attendance.length) { %><tr><td colspan="4" class="empty">No attendance records yet.</td></tr><% } %>
-      <% attendance.forEach(row => { %><tr><td><%= row.date %></td><td><%= row.punch_in_time?.slice(0,5) || '—' %></td><td><%= row.punch_out_time?.slice(0,5) || '—' %></td><td><span class="badge <%= row.is_late ? 'warning' : 'success' %>"><%= row.is_late ? 'Late' : 'On time' %></span></td></tr><% }) %>
+  <div class="metrics">
+    <div><small>Present this month</small><strong><%= present %></strong></div>
+    <div><small>Early arrivals</small><strong><%= early %></strong></div>
+    <div><small>Late arrivals</small><strong><%= late %></strong></div>
+    <div><small>Missed completed shifts</small><strong><%= absent %></strong></div>
+  </div>
+  <p class="help">Absences count only scheduled shifts that have finished without a punch-in. Days off and future shifts are excluded.</p>
+
+  <div class="card" id="my-schedule">
+    <div class="page-heading"><div><h2>My schedule</h2><p class="muted">Your next 14 days · <%= timezone %></p></div></div>
+    <div class="roster-grid">
+      <% upcoming.forEach(s => { %>
+        <article class="roster-day <%= s.off ? 'off' : '' %> <%= s.date === today ? 'is-today' : '' %>">
+          <small><%= dayNames[new Date(s.date + 'T12:00:00').getDay()] %><%= s.date === today ? ' · Today' : '' %></small>
+          <strong><%= s.date %></strong>
+          <span><%= s.off ? 'Day off' : s.name %></span>
+          <% if (!s.off) { %><b><%= s.start.slice(11,16) %>–<%= s.end.slice(11,16) %><%= s.overnight ? ' (+1 day)' : '' %></b><small><%= s.graceMinutes %> min late grace</small><% } %>
+          <small><%= s.source %></small>
+          <% if (s.notes) { %><p><%= s.notes %></p><% } %>
+        </article>
+      <% }) %>
+    </div>
+  </div>
+  <div class="card">
+    <h2>This month’s attendance</h2>
+    <div class="table-wrap"><table><thead><tr><th>Shift date</th><th>Shift / expected times</th><th>Punch in</th><th>Punch out</th><th>Arrival</th><th>Difference</th></tr></thead><tbody>
+      <% if (!attendance.length) { %><tr><td colspan="6" class="empty">No records yet. Your first punch-in will appear here.</td></tr><% } %>
+      <% attendance.forEach(row => { %>
+        <tr><td><%= row.date %></td>
+        <td><strong><%= row.shift_name || 'Previous record' %></strong><small><%= row.scheduled_start ? row.scheduled_start.slice(11,16) + '–' + row.scheduled_end.slice(11,16) + (row.scheduled_start.slice(0,10) !== row.scheduled_end.slice(0,10) ? ' (+1 day)' : '') : 'No saved shift details' %></small></td>
+        <td><%= row.punch_in_time?.slice(0,5) || '—' %><% if (row.punch_in_at && row.punch_in_at.slice(0,10) !== row.date) { %><small><%= row.punch_in_at.slice(0,10) %></small><% } %></td>
+        <td><%= row.punch_out_time?.slice(0,5) || '—' %><% if (row.punch_out_at && row.punch_out_at.slice(0,10) !== row.date) { %><small><%= row.punch_out_at.slice(0,10) %></small><% } %></td>
+        <td><span class="badge <%= row.arrival_status === 'Early' ? 'early' : row.is_late ? 'warning' : 'success' %>"><%= !row.punch_in_time ? 'Absent' : row.arrival_status || (row.is_late ? 'Late' : 'On time') %></span></td>
+        <td><%= row.arrival_status === 'Early' ? row.early_minutes + ' min early' : row.arrival_status === 'Late' ? row.late_minutes + ' min late' : '—' %></td></tr>
+      <% }) %>
     </tbody></table></div>
   </div>
 </section>

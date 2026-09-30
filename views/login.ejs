@@ -1,12 +1,1 @@
-<%- include('partials/header') %>
-<section class="container auth-wrap"><div class="card auth-card">
-  <span class="eyebrow">Welcome back</span><h1>Employee sign in</h1><p class="muted">Access your attendance dashboard.</p>
-  <form action="/login" method="post">
-    <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
-    <label>Employee ID<input name="employeeId" autocomplete="username" placeholder="e.g. EMP001" required autofocus></label>
-    <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
-    <button class="btn btn-primary full" type="submit">Sign in</button>
-  </form>
-  <p class="form-note">New to Attendly? <a href="/register">Create an account</a></p>
-</div></section>
-<%- include('partials/footer') %>
+<%- include('partials/header') %><section class="container auth"><div class="card"><span class="eyebrow">Welcome back</span><h1>Employee sign in</h1><p class="muted">Access your attendance dashboard.</p><form action="/login" method="post"><input type="hidden" name="csrfToken" value="<%= csrfToken %>"><label>Employee ID<input name="employeeId" autocomplete="username" placeholder="e.g. EMP001" required autofocus></label><label>Password<input type="password" name="password" autocomplete="current-password" required></label><button class="btn primary full">Sign in</button></form><p class="form-note">New here? <a href="/register">Create an account</a></p></div></section><%- include('partials/footer') %>
